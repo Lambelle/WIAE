@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import model
 import utils
+from sklearn.model_selection import train_test_split
 
 
 nO = 1
@@ -23,12 +24,14 @@ gp_w = 1
 de_w = 2  # Weight for decoder
 gp_w_ded = 1
 
-tr_size = 100000
-ts_size = 40000
+ts_perc = 0.2
 data = "dataset/BESSZ.txt"
 
 dataSet = np.loadtxt(data, delimiter=",")
+dataSize = dataSet.size
 
+tr_size = int(dataSize*(1-ts_perc))
+ts_size = int(dataSize*ts_perc)
 
 train_samples = dataSet[0 : tr_size - 1]
 test_samples = dataSet[tr_size : tr_size + ts_size - 1]
