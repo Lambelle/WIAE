@@ -1,37 +1,61 @@
 from distutils.command.config import config
 import numpy as np
 import tensorflow as tf
-# import csv
 import matplotlib.pyplot as plt
 import pandas as pd
 import model
 import utils
-from sklearn.model_selection import train_test_split
+import argparse
 
 
-nO = 1
-nD = 100
-k_size = 20
-nI = 50
+parser = argparse.ArgumentParser()
 
-lrD = 0.1 ** 4 * 24
-lrG = 0.1 ** 4 * 24
-batchsize = 100
-epochs = 100
+parser.add_argument('-data', required=True)
+parser.add_argument('-data_bad', required=True)
+parser.add_argument('-inn', required=True)
+parser.add_argument('-inn_test', required=True)
+parser.add_argument('-inn_bad', required=True)
+parser.add_argument('-test_perc', type=float, default=0.2)
 
-trainingC = 10
-gp_w = 1
-de_w = 2  # Weight for decoder
-gp_w_ded = 1
+parser.add_argument('-nO', type=int, default=1)
+parser.add_argument('-nD', type=int, default=100)
+parser.add_argument('-nI', type=int, default=50)
+parser.add_argument('-k_size', type=int, default=20)
 
-ts_perc = 0.2
-data = "dataset/BESSZ.txt"
+parser.add_argument('-batchsize', type=int, default=60)
+parser.add_argument('-epochs', type=int, default=100)
+parser.add_argument('-lrD', type=float, default=1e-3)
+parser.add_argument('-lrG', type=float, default=1e-3)
+parser.add_argument('-trainingC', type=int, default=1e-3)
+
+parser.add_argument('-gp_W', type=int, default=1)
+parser.add_argument('-de_W', type=int, default=1)
+parser.add_argument('-gp_W_ded', type=int, default=1)
+
+opt = parser.parse_args()
+
+nO = opt.nO
+nD = opt.nD
+k_size = opt.k_size
+nI = opt.nI
+
+lrD = opt.lrD
+lrG = opt.lrG
+batchsize = opt.batchsize
+epochs = opt.epochs
+
+trainingC = opt.trainingC
+gp_w = opt.gp_W
+de_w = opt.de_W  # Weight for decoder
+gp_w_ded = opt.gp_W_ded
+
+ts_perc = opt.test_perc
+data = opt.data
 
 dataSet = np.loadtxt(data, delimiter=",")
 dataSize = dataSet.size
-
-tr_size = int(dataSize*(1-ts_perc))
-ts_size = int(dataSize*ts_perc)
+tr_size = int(dataSize * (1 - ts_perc))
+ts_size = int(dataSize * ts_perc)
 
 train_samples = dataSet[0 : tr_size - 1]
 test_samples = dataSet[tr_size : tr_size + ts_size - 1]
@@ -256,5 +280,8 @@ wgan.compile(
     d_loss_fn=discriminator_loss,
 )
 wgan.fit(
-    x_train, batch_size=batchsize, epochs=epochs, callbacks=[cbk],
+    x_train,
+    batch_size=batchsize,
+    epochs=epochs,
+    callbacks=[cbk],
 )
