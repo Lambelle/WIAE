@@ -10,27 +10,27 @@ import argparse
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-data', required=True)
-parser.add_argument('-data_bad', required=True)
-parser.add_argument('-inn', required=True)
-parser.add_argument('-inn_test', required=True)
-parser.add_argument('-inn_bad', required=True)
-parser.add_argument('-test_perc', type=float, default=0.2)
+parser.add_argument("-data", required=True)
+parser.add_argument("-data_bad", required=True)
+parser.add_argument("-inn", required=True)
+parser.add_argument("-inn_test", required=True)
+parser.add_argument("-inn_bad", required=True)
+parser.add_argument("-test_perc", type=float, default=0.2)
 
-parser.add_argument('-nO', type=int, default=1)
-parser.add_argument('-nD', type=int, default=100)
-parser.add_argument('-nI', type=int, default=50)
-parser.add_argument('-k_size', type=int, default=20)
+parser.add_argument("-nO", type=int, default=1)
+parser.add_argument("-nD", type=int, default=100)
+parser.add_argument("-nI", type=int, default=50)
+parser.add_argument("-k_size", type=int, default=20)
 
-parser.add_argument('-batchsize', type=int, default=60)
-parser.add_argument('-epochs', type=int, default=100)
-parser.add_argument('-lrD', type=float, default=1e-3)
-parser.add_argument('-lrG', type=float, default=1e-3)
-parser.add_argument('-trainingC', type=int, default=1e-3)
+parser.add_argument("-batchsize", type=int, default=60)
+parser.add_argument("-epochs", type=int, default=100)
+parser.add_argument("-lrD", type=float, default=1e-3)
+parser.add_argument("-lrG", type=float, default=1e-3)
+parser.add_argument("-trainingC", type=int, default=1e-3)
 
-parser.add_argument('-gp_W', type=int, default=1)
-parser.add_argument('-de_W', type=int, default=1)
-parser.add_argument('-gp_W_ded', type=int, default=1)
+parser.add_argument("-gp_W", type=int, default=1)
+parser.add_argument("-de_W", type=int, default=1)
+parser.add_argument("-gp_W_ded", type=int, default=1)
 
 opt = parser.parse_args()
 
@@ -280,8 +280,5 @@ wgan.compile(
     d_loss_fn=discriminator_loss,
 )
 wgan.fit(
-    x_train,
-    batch_size=batchsize,
-    epochs=epochs,
-    callbacks=[cbk],
+    x_train, batch_size=batchsize, epochs=epochs, callbacks=[cbk],
 )
