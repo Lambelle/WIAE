@@ -1,89 +1,12 @@
-from distutils.command.config import config
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
-import pandas as pd
 import model
 import utils
 import argparse
-
-
-parser = argparse.ArgumentParser()
-
-parser.add_argument("-data", required=True)
-parser.add_argument("-data_bad", required=True)
-parser.add_argument("-inn", required=True)
-parser.add_argument("-inn_test", required=True)
-parser.add_argument("-inn_bad", required=True)
-parser.add_argument("-test_perc", type=float, default=0.2)
-
-parser.add_argument("-nO", type=int, default=1)
-parser.add_argument("-nD", type=int, default=100)
-parser.add_argument("-nI", type=int, default=50)
-parser.add_argument("-k_size", type=int, default=20)
-
-parser.add_argument("-batchsize", type=int, default=60)
-parser.add_argument("-epochs", type=int, default=100)
-parser.add_argument("-lrD", type=float, default=1e-3)
-parser.add_argument("-lrG", type=float, default=1e-3)
-parser.add_argument("-trainingC", type=int, default=1e-3)
-
-parser.add_argument("-gp_W", type=int, default=1)
-parser.add_argument("-de_W", type=int, default=1)
-parser.add_argument("-gp_W_ded", type=int, default=1)
-
-opt = parser.parse_args()
-
-nO = opt.nO
-nD = opt.nD
-k_size = opt.k_size
-nI = opt.nI
-
-lrD = opt.lrD
-lrG = opt.lrG
-batchsize = opt.batchsize
-epochs = opt.epochs
-
-trainingC = opt.trainingC
-gp_w = opt.gp_W
-de_w = opt.de_W  # Weight for decoder
-gp_w_ded = opt.gp_W_ded
-
-ts_perc = opt.test_perc
-data = opt.data
-
-dataSet = np.loadtxt(data, delimiter=",")
-dataSize = dataSet.size
-tr_size = int(dataSize * (1 - ts_perc))
-ts_size = int(dataSize * ts_perc)
-
-train_samples = dataSet[0 : tr_size - 1]
-test_samples = dataSet[tr_size : tr_size + ts_size - 1]
-bad_samples = dataSet[tr_size + ts_size :]
-x_train = utils.get_training_samples(train_samples, nI, k_size)
-generator_optimizer = tf.keras.optimizers.Adam(
-    learning_rate=lrG, beta_1=0.9, beta_2=0.999
-)
-discriminator_optimizer = tf.keras.optimizers.Adam(
-    learning_rate=lrD, beta_1=0.9, beta_2=0.999
-)
-
-D_init = tf.keras.initializers.he_normal(seed=1)
-D = model.get_discriminator_model(D_init, nD, nO, nI, k_size)
-D.summary()
-
-G_init = tf.keras.initializers.he_normal(seed=0)
-G = model.get_generator_model(G_init, nD, nI, k_size)
-G.summary()
-
-
-Decoder_init = tf.keras.initializers.he_normal(seed=0)
-De = model.get_decoder_model(Decoder_init, nI, k_size, nD)
-De.summary()
-
-Ded_init = tf.keras.initializers.he_normal(seed=1)
-DeD = model.get_discriminator_de_model(Ded_init, nI, nD, nO, k_size)
-DeD.summary()
+from statistical_tests import runs_up_and_down
+from utils import empirical_cdf_transform, reshape_innovations, ROC_curve_plotting
+from tabulate import tabulate
 
 
 class WGAN(tf.keras.Model):
@@ -248,8 +171,8 @@ class GANMonitor(tf.keras.callbacks.Callback):
         output_c = np.empty((output.shape[0] - b - 1, b))
         tf.print("Prediction at epochs:".format(output, epoch))
         bins = np.arange(0, 2, 0.001) - 1
-        plt.hist(output)
-        plt.show()
+        # plt.hist(output)
+        # plt.show()
 
 
 def discriminator_loss(real_sample, fake_sample):
@@ -262,23 +185,170 @@ def generator_loss(fake_sample, decoded_logits):
     return -tf.reduce_mean(fake_sample) - de_w * tf.reduce_mean(decoded_logits)
 
 
-cbk = GANMonitor()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
 
-wgan = WGAN(
-    discriminator=D,
-    generator=G,
-    decoder=De,
-    de_discriminator=DeD,
-    discriminator_extra_steps=trainingC,
-    gp_weight=gp_w,
-    gp_d=gp_w_ded,
-)
-wgan.compile(
-    d_optimizer=discriminator_optimizer,
-    g_optimizer=generator_optimizer,
-    g_loss_fn=generator_loss,
-    d_loss_fn=discriminator_loss,
-)
-wgan.fit(
-    x_train, batch_size=batchsize, epochs=epochs, callbacks=[cbk],
-)
+    parser.add_argument("-data", required=True)
+    parser.add_argument("-data_bad", required=True)
+    parser.add_argument("-test_perc", type=float, default=0.2)
+
+    parser.add_argument("-degree", type=int, default=4)
+    parser.add_argument("-block", type=int, default=100)
+    parser.add_argument("-stride", type=int, default=100)
+
+    parser.add_argument("-nO", type=int, default=1)
+    parser.add_argument("-nD", type=int, default=100)
+    parser.add_argument("-nI", type=int, default=50)
+    parser.add_argument("-k_size", type=int, default=20)
+
+    parser.add_argument("-batchsize", type=int, default=60)
+    parser.add_argument("-epochs", type=int, default=100)
+    parser.add_argument("-lrD", type=float, default=1e-3)
+    parser.add_argument("-lrG", type=float, default=1e-3)
+    parser.add_argument("-trainingC", type=int, default=1e-3)
+
+    parser.add_argument("-gp_W", type=int, default=1)
+    parser.add_argument("-de_W", type=int, default=1)
+    parser.add_argument("-gp_W_ded", type=int, default=1)
+
+    opt = parser.parse_args()
+
+    nO = opt.nO
+    nD = opt.nD
+    k_size = opt.k_size
+    nI = opt.nI
+
+    lrD = opt.lrD
+    lrG = opt.lrG
+    batchsize = opt.batchsize
+    epochs = opt.epochs
+
+    trainingC = opt.trainingC
+    gp_w = opt.gp_W
+    de_w = opt.de_W  # Weight for decoder
+    gp_w_ded = opt.gp_W_ded
+
+    ts_perc = opt.test_perc
+    data = opt.data
+    data_bad = opt.data_bad
+
+    fname_data = "dataset/" + data
+    fname_data_bad = "dataset/" + opt.data_bad
+
+    degree = opt.degree
+    block_size = opt.block
+    strides = opt.stride
+
+    dataSet = np.loadtxt(fname_data, delimiter=",")
+    dataSize = dataSet.size
+    tr_size = int(dataSize * (1 - ts_perc))
+    ts_size = int(dataSize * ts_perc)
+
+    train_samples = dataSet[0 : tr_size - 1]
+    test_samples = dataSet[tr_size : tr_size + ts_size - 1]
+    bad_samples = np.loadtxt(fname_data_bad, delimiter=",")
+    x_train = utils.get_training_samples(train_samples, nI, k_size)
+    x_bad = utils.get_training_samples(bad_samples, nI, k_size)
+    x_test = utils.get_training_samples(test_samples, nI, k_size)
+
+    generator_optimizer = tf.keras.optimizers.Adam(
+        learning_rate=lrG, beta_1=0.9, beta_2=0.999
+    )
+    discriminator_optimizer = tf.keras.optimizers.Adam(
+        learning_rate=lrD, beta_1=0.9, beta_2=0.999
+    )
+
+    D_init = tf.keras.initializers.he_normal(seed=1)
+    D = model.get_discriminator_model(D_init, nD, nO, nI, k_size)
+    D.summary()
+
+    G_init = tf.keras.initializers.he_normal(seed=0)
+    G = model.get_generator_model(G_init, nD, nI, k_size)
+    G.summary()
+
+    Decoder_init = tf.keras.initializers.he_normal(seed=0)
+    De = model.get_decoder_model(Decoder_init, nI, k_size, nD)
+    De.summary()
+
+    Ded_init = tf.keras.initializers.he_normal(seed=1)
+    DeD = model.get_discriminator_de_model(Ded_init, nI, nD, nO, k_size)
+    DeD.summary()
+
+    cbk = GANMonitor()
+
+    wgan = WGAN(
+        discriminator=D,
+        generator=G,
+        decoder=De,
+        de_discriminator=DeD,
+        discriminator_extra_steps=trainingC,
+        gp_weight=gp_w,
+        gp_d=gp_w_ded,
+    )
+    wgan.compile(
+        d_optimizer=discriminator_optimizer,
+        g_optimizer=generator_optimizer,
+        g_loss_fn=generator_loss,
+        d_loss_fn=discriminator_loss,
+    )
+    wgan.fit(
+        x_train,
+        batch_size=batchsize,
+        epochs=epochs,
+        callbacks=[cbk],
+    )
+
+    inn_train = wgan.generator(x_train).numpy()
+    inn_bad = wgan.generator(x_bad).numpy()
+    inn_test = wgan.generator(x_test).numpy()
+
+    recons_train = wgan.decoder(inn_train).numpy()
+    recons_bad = wgan.decoder(inn_bad).numpy()
+    recons_test = wgan.decoder(inn_test).numpy()
+
+    inn_train = inn_train.flatten()
+    inn_bad = inn_bad.flatten()
+    inn_test = inn_test.flatten()
+
+    fname_recon_test = "results/recons_" + data
+    fname_recon_bad = "results/recons_" + data
+
+    np.savetxt(fname_recon_test, recons_test)
+    np.savetxt(fname_recon_bad, recons_bad)
+
+    z_ud_train = runs_up_and_down(inn_train)
+    z_ud_bad = runs_up_and_down(inn_bad)
+    z_ud_test = runs_up_and_down(inn_test)
+
+    print_data = [["train", z_ud_train], ["test", z_ud_test], ["bad", z_ud_bad]]
+    print(tabulate(print_data, headers=["data", "p_value for runs test"]))
+
+    inn_test_transformed = empirical_cdf_transform(inn_train, inn_test)
+    inn_bad_transformed = empirical_cdf_transform(inn_train, inn_bad)
+
+    fname_inn_test = "results/inn_" + data
+    fname_inn_bad = "results/inn_" + data
+
+    # plt.hist(inn_test_transformed.flatten())
+    # plt.show()
+    # plt.hist(inn_bad_transformed.flatten())
+    # plt.show()
+
+    np.savetxt(fname_inn_test, inn_test_transformed)
+    np.savetxt(fname_inn_bad, inn_bad_transformed)
+
+    inn_test_transformed_reshape = reshape_innovations(
+        inn_test_transformed, block_size, strides
+    )
+    inn_bad_transformed_reshape = reshape_innovations(
+        inn_bad_transformed, block_size, strides
+    )
+
+    true_positive, false_positive = ROC_curve_plotting(
+        inn_test_transformed_reshape, inn_bad_transformed_reshape,degree
+    )
+    fname_roc_TP = "ROC curves/TP_" + data
+    fname_roc_FP = "ROC curves/FP_" + data
+
+    np.savetxt(fname_roc_TP, true_positive)
+    np.savetxt(fname_roc_FP, false_positive)
