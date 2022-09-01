@@ -8,6 +8,7 @@ from statistical_tests import runs_up_and_down
 from utils import empirical_cdf_transform, reshape_innovations, ROC_curve_plotting
 from tabulate import tabulate
 
+tf.random.set_seed(925)
 
 class WGAN(tf.keras.Model):
     def __init__(

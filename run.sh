@@ -15,7 +15,7 @@ gp_w_ded=3
 
 degree=4
 block_size=200
-strides=100
+strides=200
 
 ts_perc=0.2
 data="MC.txt"
