@@ -8,7 +8,8 @@ from statistical_tests import runs_up_and_down
 from utils import empirical_cdf_transform, reshape_innovations, ROC_curve_plotting
 from tabulate import tabulate
 
-tf.random.set_seed(925)
+
+
 
 class WGAN(tf.keras.Model):
     def __init__(
@@ -152,7 +153,11 @@ class WGAN(tf.keras.Model):
         self.g_optimizer.apply_gradients(
             zip(dec_gradient, self.decoder.trainable_variables)
         )
-        return {"d_loss": d_loss, "g_loss": g_loss, "ded_loss": ded_loss}
+        return {
+            "Independence Discriminator Loss": d_loss,
+            "Encoder Loss": g_loss,
+            "Equivalent Discriminator Loss": ded_loss,
+        }
 
     def call(self, input):
         output = self.generator(input, training=False)
@@ -208,11 +213,14 @@ if __name__ == "__main__":
     parser.add_argument("-lrG", type=float, default=1e-3)
     parser.add_argument("-trainingC", type=int, default=1e-3)
 
-    parser.add_argument("-gp_W", type=int, default=1)
-    parser.add_argument("-de_W", type=int, default=1)
-    parser.add_argument("-gp_W_ded", type=int, default=1)
+    parser.add_argument("-gp_W", type=float, default=1)
+    parser.add_argument("-de_W", type=float, default=1)
+    parser.add_argument("-gp_W_ded", type=float, default=1)
+
+    parser.add_argument("-seed", type=int, default=1)
 
     opt = parser.parse_args()
+
 
     nO = opt.nO
     nD = opt.nD
@@ -240,6 +248,10 @@ if __name__ == "__main__":
     block_size = opt.block
     strides = opt.stride
 
+    seed_number = opt.seed
+
+    tf.random.set_seed(seed_number)
+
     dataSet = np.loadtxt(fname_data, delimiter=",")
     dataSize = dataSet.size
     tr_size = int(dataSize * (1 - ts_perc))
@@ -248,6 +260,11 @@ if __name__ == "__main__":
     train_samples = dataSet[0 : tr_size - 1]
     test_samples = dataSet[tr_size : tr_size + ts_size - 1]
     bad_samples = np.loadtxt(fname_data_bad, delimiter=",")
+
+    print("train_samples:", train_samples.shape)
+    print("test_samples:", test_samples.shape)
+    print("bad samples:", bad_samples.shape)
+
     x_train = utils.get_training_samples(train_samples, nI, k_size)
     x_bad = utils.get_training_samples(bad_samples, nI, k_size)
     x_test = utils.get_training_samples(test_samples, nI, k_size)
@@ -261,19 +278,19 @@ if __name__ == "__main__":
 
     D_init = tf.keras.initializers.he_normal(seed=1)
     D = model.get_discriminator_model(D_init, nD, nO, nI, k_size)
-    D.summary()
+    # D.summary()
 
-    G_init = tf.keras.initializers.he_normal(seed=0)
+    G_init = tf.keras.initializers.he_normal(seed=1)
     G = model.get_generator_model(G_init, nD, nI, k_size)
-    G.summary()
+    # G.summary()
 
     Decoder_init = tf.keras.initializers.he_normal(seed=0)
     De = model.get_decoder_model(Decoder_init, nI, k_size, nD)
-    De.summary()
+    # De.summary()
 
-    Ded_init = tf.keras.initializers.he_normal(seed=1)
+    Ded_init = tf.keras.initializers.he_normal(seed=0)
     DeD = model.get_discriminator_de_model(Ded_init, nI, nD, nO, k_size)
-    DeD.summary()
+    # DeD.summary()
 
     cbk = GANMonitor()
 
@@ -297,6 +314,7 @@ if __name__ == "__main__":
         batch_size=batchsize,
         epochs=epochs,
         callbacks=[cbk],
+        verbose=0,
     )
 
     inn_train = wgan.generator(x_train).numpy()
@@ -330,6 +348,27 @@ if __name__ == "__main__":
     fname_inn_test = "results/inn_" + data
     fname_inn_bad = "results/inn_" + data
 
+    dataname = data.replace("txt", "")
+    fig_name = (
+        "ROC curves/lrG_"
+        + str(lrG)
+        + "lrD_"
+        + str(lrD)
+        + "gp_w_"
+        + str(gp_w)
+        + "gp_w_ded_"
+        + str(gp_w_ded)
+        + "de_w_"
+        + str(de_w)
+        + "seed_"
+        + str(seed_number)
+        + "_runs_test_"
+        + str(z_ud_test)
+        + "_"
+        + dataname
+        + ".png"
+    )
+
     # plt.hist(inn_test_transformed.flatten())
     # plt.show()
     # plt.hist(inn_bad_transformed.flatten())
@@ -346,7 +385,7 @@ if __name__ == "__main__":
     )
 
     true_positive, false_positive = ROC_curve_plotting(
-        inn_test_transformed_reshape, inn_bad_transformed_reshape,degree
+        inn_test_transformed_reshape, inn_bad_transformed_reshape, degree, fig_name
     )
     fname_roc_TP = "ROC curves/TP_" + data
     fname_roc_FP = "ROC curves/FP_" + data

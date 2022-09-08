@@ -9,3 +9,7 @@ Innovations Auto-encoder
 - matplotlib 3.5.2
 - tabulate 0.8.10
 - pandas 1.4.3
+
+## Usage
+Use `run.sh` to run different experiments. Specify hyperparameters in `run.sh`. 
+

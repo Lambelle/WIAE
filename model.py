@@ -86,3 +86,5 @@ def get_discriminator_de_model(Ded_init, nI, nD, nO, k_size):
     ded_model = tf.keras.models.Model(ded_input, x, name="discriminator_de")
     return ded_model
 
+
+
