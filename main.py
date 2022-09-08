@@ -314,7 +314,6 @@ if __name__ == "__main__":
         batch_size=batchsize,
         epochs=epochs,
         callbacks=[cbk],
-        verbose=0,
     )
 
     inn_train = wgan.generator(x_train).numpy()
