@@ -41,3 +41,5 @@ do
     done
   done
 done
+
+echo "Training Finished!"
