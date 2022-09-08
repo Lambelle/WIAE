@@ -169,14 +169,14 @@ class GANMonitor(tf.keras.callbacks.Callback):
         self.num_img = num_img
         self.latent_dim = latent_dim
 
-    def on_epoch_end(self, epoch, logs=None):
-        z = x_train
-        output = self.model.generator(z)
-        output = output.numpy()
-        b = 50
-        output_c = np.empty((output.shape[0] - b - 1, b))
-        tf.print("Prediction at epochs:".format(output, epoch))
-        bins = np.arange(0, 2, 0.001) - 1
+    # def on_epoch_end(self, epoch, logs=None):
+    #     z = x_train
+        # output = self.model.generator(z)
+        # output = output.numpy()
+        # b = 50
+        # output_c = np.empty((output.shape[0] - b - 1, b))
+        # tf.print("Prediction at epochs:".format(output, epoch))
+        # bins = np.arange(0, 2, 0.001) - 1
         # plt.hist(output)
         # plt.show()
 
