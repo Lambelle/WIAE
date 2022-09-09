@@ -20,7 +20,7 @@ strides=100
 
 ts_perc=0.1667
 data="MC.txt"
-data_bad="MC_Anomaly_62.txt"
+data_bad="MC_Anomaly.txt"
 
 for lrD in $(seq 0.0001 0.0001 1)
 do
@@ -32,7 +32,7 @@ do
       do
         for gp_w_ded in $(seq 1 0.01 10)
         do
-          for seed in $(seq 1 1 1000)
+          for seed in $(seq 1 1 200)
           do
             python main.py -data $data -data_bad $data_bad -nO $nO -nD $nD -nI $nI -k_size $k_size -lrD $lrD -lrG $lrG -batchsize $batchsize -epochs $epochs -trainingC $trainingC -gp_W $gp_w -gp_W_ded $gp_w_ded -de_W $de_w -test_perc $ts_perc -degree $degree -block $block_size -stride $strides -seed $seed
           done
