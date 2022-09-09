@@ -349,7 +349,7 @@ if __name__ == "__main__":
 
     dataname = data.replace("txt", "")
     fig_name = (
-        "ROC curves/lrG_"
+        "ROC_curves/lrG_"
         + str(lrG)
         + "lrD_"
         + str(lrD)
@@ -386,8 +386,8 @@ if __name__ == "__main__":
     true_positive, false_positive = ROC_curve_plotting(
         inn_test_transformed_reshape, inn_bad_transformed_reshape, degree, fig_name
     )
-    fname_roc_TP = "ROC curves/TP_" + data
-    fname_roc_FP = "ROC curves/FP_" + data
+    fname_roc_TP = "ROC_curves/TP_" + data
+    fname_roc_FP = "ROC_curves/FP_" + data
 
     np.savetxt(fname_roc_TP, true_positive)
     np.savetxt(fname_roc_FP, false_positive)

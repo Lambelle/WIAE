@@ -3,5 +3,5 @@ dataset/UTKZ.txt
 dataset/UTK_bad.txt
 .DS_store
 .idea
-ROC curves
+ROC_curves
 
