@@ -334,11 +334,10 @@ if __name__ == "__main__":
     np.savetxt(fname_recon_test, recons_test)
     np.savetxt(fname_recon_bad, recons_bad)
 
-    z_ud_train = runs_up_and_down(inn_train)
     z_ud_bad = runs_up_and_down(inn_bad)
     z_ud_test = runs_up_and_down(inn_test)
 
-    print_data = [["train", z_ud_train], ["test", z_ud_test], ["bad", z_ud_bad]]
+    print_data = [["test", z_ud_test], ["bad", z_ud_bad]]
     print(tabulate(print_data, headers=["data", "p_value for runs test"]))
 
     inn_test_transformed = empirical_cdf_transform(inn_train, inn_test)
